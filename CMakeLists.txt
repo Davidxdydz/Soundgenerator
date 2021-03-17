@@ -25,7 +25,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
     FORCE)
 
 set(cc_sources
-    function_generator/src/sin_generator.cc
+    function_generator/src/sine_generator.cc
     function_generator/src/uniform_sampler.cc
 )
 
