@@ -22,10 +22,11 @@ def build_encoder(input_shape, embedded_size):
     # (n / 16, 32)
     encoder_hidden = MaxPool1D(4, padding="same")(encoder_hidden)
 
+    # TODO make this constant maybe so that input shape is not correlated with embedded_size
     # (n / 16, embedded_size)
     encoder_out = Dense(embedded_size, activation="tanh")(encoder_hidden)
 
-    return Model(encoder_input, encoder_out)
+    return Model(encoder_input, encoder_out,name = "Encoder")
 
 
 def build_decoder(feature_shape):
@@ -36,7 +37,7 @@ def build_decoder(feature_shape):
     decoder_hidden = Conv1D(16, 8, padding="same", activation="tanh")(decoder_hidden)
     decoder_hidden = UpSampling1D(4)(decoder_hidden)
     decoder_out = Conv1D(1, 8, padding="same", activation="tanh")(decoder_hidden)
-    return Model(decoder_input, decoder_out)
+    return Model(decoder_input, decoder_out,name="Decoder")
 
 
 def build_freq_classifier(feature_shape):
@@ -44,7 +45,7 @@ def build_freq_classifier(feature_shape):
     freq_flatten = Flatten()(freq_input)
     freq_classifier = Dense(8, activation="tanh")(freq_flatten)
     freq_classifier = Dense(1, activation="tanh")(freq_classifier)
-    return Model(freq_input, freq_classifier)
+    return Model(freq_input, freq_classifier,name = "FreqClassifier")
 
 
 def build_model(input_shape, embedded_size):
@@ -59,7 +60,7 @@ def build_model(input_shape, embedded_size):
     autoencoder_dec = decoder(autoencoder_enc)
 
     return (
-        Model(autoencoder_input, [autoencoder_dec, autoencoder_freq]),
+        Model(autoencoder_input, [autoencoder_dec, autoencoder_freq],name = "autoencoder"),
         encoder,
         decoder,
     )
@@ -68,6 +69,4 @@ def build_model(input_shape, embedded_size):
 def train_autoencoder(autoencoder, input_samples, freq_labels):
 
     autoencoder.compile(loss="mse", optimizer="adam")
-
-
-    autoencoder.fit(input_samples, [input_samples, freq_labels], epochs = 100)
+    autoencoder.fit(input_samples, [input_samples, freq_labels], epochs = 1000)
