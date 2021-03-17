@@ -3,6 +3,8 @@ from numpy.lib.scimath import log2
 import soundnet
 import matplotlib.pyplot as plt
 from scipy.signal import stft, istft
+from function_generator import SineGenerator, UniformSampler
+
 """
 {
     "python.formatting.provider": "black"
@@ -10,37 +12,6 @@ from scipy.signal import stft, istft
 """
 SAMPLE_FREQUENCY = 2 ** 10
 WINDOW_SIZE = SAMPLE_FREQUENCY//2**3
-
-
-def sample(f, d=1, sf=SAMPLE_FREQUENCY):
-    """
-    Samples function f for duration d at sampling frequency sf
-
-    Args:
-        f: function that gives amplitude between -1 and 1 at time t
-        d: duration of the sample
-        sf: sampling frequency
-
-    Returns: numpy array of sampled audio
-
-    """
-    t = np.linspace(0, d, int(sf * d))
-    return np.vectorize(f)(t)
-
-
-def sample_sin(frequency, duration=1):
-    """
-    Generate a sampled sine wave of given frequency and duration
-    The sampling rate is given by SAMPLE_FREQUENCY
-
-    Args:
-        frequency: the frequency in Hz
-        duration: the duration in seconds
-    
-    Returns:
-        x: array containing the sampled sine wave
-    """
-    return sample(lambda t: np.sin(t * 2 * np.pi * frequency), duration)
 
 def normalize(arr):
     """
@@ -135,7 +106,11 @@ def test_conversion():
     Returns:
         True if postprocess reverts preprocess a single example
     """
-    x1 = sample_sin(100,1)
+    
+    sin_gen = SineGenerator(100)
+    sampler = UniformSampler(SAMPLE_FREQUENCY)
+
+    x1 = np.array(sampler.sample(sin_gen))
     x2 = postprocess(*preprocess(x1))
     # allclose because of floating point math
     return np.allclose(x1,x2)
@@ -161,11 +136,11 @@ if __name__ == "__main__":
     # Tests
     assert test_conversion(), "sound -> preprocessing -> postprocessing does not equal original sound"
 
-
     # Generate Dataset
     frequencies = np.arange(10, 100, 10, dtype=float)
+    uniform_sampler = UniformSampler(SAMPLE_FREQUENCY)
     frequency_labels = normalize(frequencies)
-    samples = np.array([sample_sin(f) for f in frequencies])
+    samples = [np.array(uniform_sampler.sample(SineGenerator(f))) for f in frequencies]
     
     # for training
     magnitudesList = []
