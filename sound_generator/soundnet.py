@@ -6,7 +6,8 @@ from tensorflow.keras.layers import (
     UpSampling1D,
 )
 from tensorflow.keras.models import Model
-from sound_generator.global_configuration import TRAINING_EPOCHS
+from sound_generator.global_configuration import TRAINING_EPOCHS, FEATURE_FIT_ITERATIONS
+import numpy as np
 
 
 def build_encoder(input_shape, embedded_size):
@@ -51,7 +52,6 @@ def build_decoder(feature_shape):
     decoder_hidden = Conv1D(64, 4, padding="same", activation="relu")(decoder_hidden)
     decoder_out = Conv1D(1, 4, padding="same", activation="relu")(decoder_hidden)
 
-
     return Model(decoder_input, decoder_out, name="Decoder")
 
 
@@ -84,8 +84,8 @@ def build_model(input_shape, embedded_size):
         embedded_size: Size of the final encoder embedding layer.
 
     Returns:
-        A triple containing the complete autoencoder, the encoder and 
-        decoder.
+        A Quadruple containing the complete autoencoder, the encoder and
+        decoder and the freuqency classifier.
     """
 
     encoder = build_encoder(input_shape, embedded_size)
@@ -103,7 +103,69 @@ def build_model(input_shape, embedded_size):
         ),
         encoder,
         decoder,
+        freq_classifier,
     )
+
+
+def freeze_model(model, freeze):
+    """
+    Set model training state frozen or unfrozen.
+
+    Args:
+        model: The model to set the state of.
+        freeze: Freeze state.
+    """
+
+    for layer in model.layers:
+        layer.trainable = not freeze
+
+
+def match_features_space_frequency(encoder, frequency_classifier, sample, frequency):
+    """
+    Retargets a sample in feature space to match the frequency prediction.
+
+    Args:
+        encoder: The encoder to use to obtain the embedding.
+        frequency_classifier: The classifier used to move in feature space.
+        sample: The sample to retarget.
+        frequency: The retarget frequency.
+
+    Returns:
+        The retargeted sample in feature space.
+    """
+
+    # Transform to feature space.
+    feature_space_sample = encoder.predict(sample.reshape(1, *sample.shape))
+
+    # Freeze the classifier model.
+    freeze_model(frequency_classifier, True)
+
+    # Make a bridge model to retarget the feature space with gradient descend.
+    temp_inp = Input(feature_space_sample.shape[1:])
+
+    # The weights are initally identity so we start at the correct location in feature space.
+    temp_dense = Dense(64, activation="relu", kernel_initializer="identity")(temp_inp)
+    transform_model = Model(temp_inp, temp_dense)
+
+    # Make temporary model to abuse keras gradients.
+    temp_out = frequency_classifier(transform_model.output)
+    temp_model = Model(temp_inp, temp_out)
+
+    # Search feature space for sample with correct frequency.
+    temp_model.compile(loss="mse", optimizer="adam")
+    hist = temp_model.fit(
+        feature_space_sample, np.array(frequency).reshape(1, 1), epochs=FEATURE_FIT_ITERATIONS, verbose=0
+    ).history
+
+    # Check if we failed to converge.
+    if (hist["loss"][-1] > 0.01):
+        print("Failed to converge. Final loss {0}.".format(hist["loss"][-1]))
+
+    # Unfreeze model.
+    freeze_model(frequency_classifier, False)
+
+    # Move feature space sample to different feature space location.
+    return transform_model.predict(feature_space_sample)
 
 
 def train_autoencoder(autoencoder, input_samples, freq_labels):
