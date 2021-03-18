@@ -6,6 +6,7 @@ from tensorflow.keras.layers import (
     UpSampling1D,
 )
 from tensorflow.keras.models import Model
+from sound_generator.global_configuration import TRAINING_EPOCHS
 
 
 def build_encoder(input_shape, embedded_size):
@@ -116,4 +117,4 @@ def train_autoencoder(autoencoder, input_samples, freq_labels):
     """
 
     autoencoder.compile(loss="mse", optimizer="adam")
-    autoencoder.fit(input_samples, [input_samples, freq_labels], epochs=1000)
+    autoencoder.fit(input_samples, [input_samples, freq_labels], epochs=TRAINING_EPOCHS)
