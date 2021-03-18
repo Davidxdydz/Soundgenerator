@@ -32,7 +32,7 @@ $ cmake ..
 $ make -j
 $ mv *.so ..
 $ cd ..
-$ python3 createSounds.py
+$ python3 main.py
 ```
 ### Arch
 ```shell
@@ -47,7 +47,7 @@ $ cmake ..
 $ make -j
 $ mv *.so ..
 $ cd ..
-$ python3 createSounds.py
+$ python3 main.py
 ```
 
 ### Windows
@@ -57,15 +57,15 @@ works with msbuild Version 16.1.76+g14b0a930a7, other versions probably work as 
 Msbuild is not in path as standard, use it e.g. from "Developer Command Prompt for VS xx"
 
 ```
-pip install pybind11[global] numpy matplotlib tensorflow scipy
-git clone https://github.com/Davidxdydz/Soundgenerator.git
-cd Soundgenerator
-mkdir build
-cmake ..
-msbuild functionGenerator.sln
-move .\Debug\function_generator.cp38-win_amd64.pyd ..
-cd ..
-python createSounds.py
+$ pip install pybind11[global] numpy matplotlib tensorflow scipy
+$ git clone https://github.com/Davidxdydz/Soundgenerator.git
+$ cd Soundgenerator
+$ mkdir build
+$ cmake ..
+$ msbuild functionGenerator.sln
+$ move .\Debug\function_generator.cp38-win_amd64.pyd ..
+$ cd ..
+$ python main.py
 ```
 
 ## Troubleshooting
