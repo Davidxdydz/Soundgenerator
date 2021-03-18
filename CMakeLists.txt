@@ -10,17 +10,17 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
 
 set(CMAKE_CXX_FLAGS_DEBUG
     "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer \
-    -g -O1 -Wall -Wextra"
+    -g -O1 -Wall "
     CACHE STRING "Flags used by the C++ compiler during AddressSanitizer builds."
     FORCE)
 
 set(CMAKE_CXX_FLAGS_RELEASE
-    "-O3 -Wall -Wextra"
+    "-O3 -Wall "
     CACHE STRING "Flags used by the C++ compiler during Release builds."
     FORCE)
 
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    "-O3 -Wall -Wextra -g"
+    "-O3 -Wall  -g"
     CACHE STRING "Flags used by the C++ compiler during RelWithDebInfo builds."
     FORCE)
 
