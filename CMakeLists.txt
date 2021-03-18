@@ -9,8 +9,7 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
     FORCE)
 
 set(CMAKE_CXX_FLAGS_DEBUG
-    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer \
-    -g -O1 -Wall "
+    "-fno-omit-frame-pointer -g -Wall "
     CACHE STRING "Flags used by the C++ compiler during AddressSanitizer builds."
     FORCE)
 

@@ -5,3 +5,4 @@ prototype.ipynb
 build/
 *.png
 *.pyd
+*.so
