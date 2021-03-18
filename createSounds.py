@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     # plotting for reference
     # TODO move this
-    fig, axes = plt.subplots(3,3,sharex = True,sharey = True,figsize = (20,20))
+    fig, axes = plt.subplots(3,3,sharex = True,sharey = True,figsize = (15,15))
     for n,sample in enumerate(samples):
         ax = axes[n%3][n//3]
         ax.plot(sample,color = "orange")
