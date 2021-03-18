@@ -75,7 +75,7 @@ def preprocess(sampled_sound):
     return normalized_magnitudes, phases, (mi, ma)
 
 
-def postprocess(magnitudes, phases, normalization_params,padding = None):
+def postprocess(magnitudes, phases, normalization_params):
     """
     Converts a normalized stft representation into a denormalized time series representation.
     The stft has to represent a signal sampled at SAMPLE_FREQUENCY
@@ -89,8 +89,7 @@ def postprocess(magnitudes, phases, normalization_params,padding = None):
         x: 1D array of sample points of the stft in the time domain
     """
     mi, ma = normalization_params
-    unpadded = magnitudes[:-padding] if padding else magnitudes
-    denormalized_magnitudes = np.exp((unpadded + 1) / 2 * abs(ma - mi) + mi)
+    denormalized_magnitudes = np.exp((magnitudes + 1) / 2 * abs(ma - mi) + mi)
     zxx = polar_to_complex(denormalized_magnitudes, phases)
     _, x = istft(zxx, fs=SAMPLE_FREQUENCY)
     return x
