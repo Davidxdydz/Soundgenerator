@@ -11,6 +11,7 @@ from tensorflow.keras.models import Model
 
 def build_encoder(input_shape, embedded_size):
 
+    # TODO increase params, atm only 26k params
     # (n,)
     encoder_input = Input(input_shape)
     # (n, 16)

@@ -154,9 +154,7 @@ if __name__ == "__main__":
     for magnitudes,phases, params in map(preprocess,samples):
         original_shape = magnitudes.shape
         # magnitudes has shape (m,n)
-        # -> flatten for now
-        # TODO try 2d conv
-        magnitudesList.append(magnitudes.reshape(-1))
+        magnitudesList.append(magnitudes)
         phasesList.append(phases)
         paramsList.append(params)
     
@@ -165,8 +163,7 @@ if __name__ == "__main__":
     to_short = po2-magnitudesList[0].shape[0]
     for n,magnitudes in enumerate(magnitudesList):
         # pad the data with 0 to the next power of two so the network has the right dimensions
-        # wrap last dimension once more for tf
-        magnitudesList[n] = np.pad(magnitudes,(0,to_short)).reshape((-1,1))
+        magnitudesList[n] = np.pad(magnitudes,[(0,to_short),(0,0)])
     magnitudesList = np.array(magnitudesList)
 
     # plotting for reference
@@ -178,7 +175,7 @@ if __name__ == "__main__":
 
 
     # now build and train the model
-    autoencoder, encoder, decoder = soundnet.build_model((po2, 1), 20)
+    autoencoder, encoder, decoder = soundnet.build_model(magnitudesList.shape[1:], 20)
     print(autoencoder.summary())
     soundnet.train_autoencoder(autoencoder, magnitudesList, frequency_labels)
 
@@ -188,7 +185,7 @@ if __name__ == "__main__":
     recovered = []
     for n,(magnitudes,f,phases,params) in enumerate(zip(predictions[0],predictions[1],phasesList,paramsList)):
         # TODO maybe move this postprocessing into a function
-        recovered.append(postprocess(magnitudes[:-to_short].reshape(original_shape),phases,params))
+        recovered.append(postprocess(magnitudes[:-to_short],phases,params))
         ax = axes[n%3][n//3]
         ax.plot(recovered[-1],color = "blue")
         ax.set_title(f"Predicted: {int(f*90+10)}Hz")
