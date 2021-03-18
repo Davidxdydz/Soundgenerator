@@ -85,7 +85,7 @@ def preprocess(sampled_sound):
     return normalized_magnitudes, phases, (mi, ma)
 
 
-def postprocess(magnitudes, phases, normalization_params):
+def postprocess(magnitudes, phases, normalization_params,padding = None):
     """
     Converts a normalized stft representation into a denormalized time series representation.
     The stft has to represent a signal sampled at SAMPLE_FREQUENCY
@@ -99,7 +99,8 @@ def postprocess(magnitudes, phases, normalization_params):
         x: 1D array of sample points of the stft in the time domain
     """
     mi, ma = normalization_params
-    denormalized_magnitudes = np.exp((magnitudes + 1) / 2 * abs(ma - mi) + mi)
+    unpadded = magnitudes[:-padding] if padding else magnitudes
+    denormalized_magnitudes = np.exp((unpadded + 1) / 2 * abs(ma - mi) + mi)
     zxx = polar_to_complex(denormalized_magnitudes, phases)
     _, x = istft(zxx, fs=SAMPLE_FREQUENCY)
     return x
@@ -209,7 +210,7 @@ if __name__ == "__main__":
         zip(predictions[0], predictions[1], phases, params)
     ):
         # TODO maybe move this postprocessing into a function
-        recovered.append(postprocess(magnitudes[:-padding], phases, params))
+        recovered.append(postprocess(magnitudes, phases, params,padding))
         ax = axes[n % 3][n // 3]
         ax.plot(recovered[-1], color="blue")
         ax.set_title(f"Predicted: {int(f*90+10)}Hz")
