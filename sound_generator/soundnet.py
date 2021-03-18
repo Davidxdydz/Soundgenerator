@@ -3,7 +3,6 @@ from tensorflow.keras.layers import (
     Input,
     Conv1D,
     Flatten,
-    MaxPool1D,
     UpSampling1D,
 )
 from tensorflow.keras.models import Model
@@ -22,16 +21,10 @@ def build_encoder(input_shape, embedded_size):
     """
 
     # TODO increase params, atm only 26k params
-    # (n,)
     encoder_input = Input(input_shape)
-    # (n, 16)
-    encoder_hidden = Conv1D(64, 8, padding="same", activation="relu")(encoder_input)
-    # (n / 4, 16)
-    encoder_hidden = MaxPool1D(4, padding="same")(encoder_hidden)
-    # (n / 4, 32)
-    encoder_hidden = Conv1D(32, 8, padding="same", activation="relu")(encoder_hidden)
-    # (n / 16, 32)
-    encoder_hidden = MaxPool1D(4, padding="same")(encoder_hidden)
+    encoder_hidden = Conv1D(64, 4, padding="same", activation="relu")(encoder_input)
+    encoder_hidden = Dense(32, activation="relu")(encoder_hidden)
+    encoder_hidden = Conv1D(16, 4, padding="same", activation="relu")(encoder_hidden)
 
     # TODO make this constant maybe so that input shape is not correlated with embedded_size
     # (n / 16, embedded_size)
@@ -40,7 +33,7 @@ def build_encoder(input_shape, embedded_size):
     return Model(encoder_input, encoder_out, name="Encoder")
 
 
-def build_decoder(feature_shape):
+def build_decoder(feature_shape, output_shape):
     """
     Builds an decoder model for use in an autoencoder.
 
@@ -52,11 +45,12 @@ def build_decoder(feature_shape):
     """
 
     decoder_input = Input(feature_shape)
-    decoder_hidden = Conv1D(32, 8, padding="same", activation="relu")(decoder_input)
-    decoder_hidden = UpSampling1D(4)(decoder_input)
-    decoder_hidden = Conv1D(64, 8, padding="same", activation="relu")(decoder_hidden)
-    decoder_hidden = UpSampling1D(4)(decoder_hidden)
-    decoder_out = Conv1D(1, 8, padding="same", activation="relu")(decoder_hidden)
+    decoder_hidden = Conv1D(16, 4, padding="same", activation="relu")(decoder_input)
+    decoder_hidden = Dense(32, activation="relu")(decoder_input)
+    decoder_hidden = Conv1D(64, 4, padding="same", activation="relu")(decoder_hidden)
+    decoder_out = Conv1D(1, 4, padding="same", activation="relu")(decoder_hidden)
+
+
     return Model(decoder_input, decoder_out, name="Decoder")
 
 
@@ -74,7 +68,7 @@ def build_freq_classifier(feature_shape):
 
     freq_input = Input(feature_shape)
     freq_flatten = Flatten()(freq_input)
-    freq_classifier = Dense(8, activation="relu")(freq_flatten)
+    freq_classifier = Dense(16, activation="relu")(freq_flatten)
     freq_classifier = Dense(1, activation="relu")(freq_classifier)
     return Model(freq_input, freq_classifier, name="FreqClassifier")
 
