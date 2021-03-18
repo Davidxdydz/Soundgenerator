@@ -33,7 +33,7 @@ def build_encoder(input_shape, embedded_size):
     return Model(encoder_input, encoder_out, name="Encoder")
 
 
-def build_decoder(feature_shape, output_shape):
+def build_decoder(feature_shape):
     """
     Builds an decoder model for use in an autoencoder.
 
