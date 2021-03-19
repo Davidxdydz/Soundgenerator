@@ -6,3 +6,4 @@ build/
 *.png
 *.pyd
 *.so
+*.csv
