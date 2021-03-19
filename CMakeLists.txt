@@ -26,6 +26,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
 set(cc_sources
     function_generator/src/sine_generator.cc
     function_generator/src/uniform_sampler.cc
+    function_generator/src/saw_generator.cc
 )
 
 find_package(pybind11 REQUIRED)

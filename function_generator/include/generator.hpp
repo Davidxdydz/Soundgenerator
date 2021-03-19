@@ -10,10 +10,10 @@ struct Generator
      * @brief Evaluate the generator on a certain point. This call may not change
      *        the internal state of the generator.
      * 
-     * @param x The point at which to perform evaluation.
+     * @param t The time at which to perform evaluation.
      * @return The function at the current point.
      */
-    virtual double operator()(const double x) const = 0;
+    virtual double operator()(const double t) const = 0;
 
     /**
      * @brief Destroy the Generator object

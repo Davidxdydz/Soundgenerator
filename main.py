@@ -1,7 +1,7 @@
 from sound_generator.visualize import plot_waveforms
 import numpy as np
 from sound_generator import soundnet, data_processing, global_configuration
-from function_generator import SineGenerator, UniformSampler
+from function_generator import SineGenerator, UniformSampler,SawGenerator
 import matplotlib.pyplot as plt
 
 
@@ -29,10 +29,12 @@ def pitch_shift(encoder, decoder, frequency_classifier, sample, target_frequency
 if __name__ == "__main__":
 
     # Generate Dataset
-    frequencies = list(range(10, 100, 10))
+    frequencies = list(range(10, 100, 20))
     uniform_sampler = UniformSampler(global_configuration.SAMPLE_FREQUENCY)
     samples = [np.array(uniform_sampler.sample(SineGenerator(f))) for f in frequencies]
-    
+    samples += [np.array(uniform_sampler.sample(SawGenerator(f))) for f in frequencies]
+    frequencies*=2
+
     # a real sound
     # trndsttr = np.loadtxt("samples.csv",delimiter=",")[:global_configuration.SAMPLE_FREQUENCY*2:2,0]
     # samples.append(trndsttr)

@@ -12,8 +12,8 @@ py::list UniformSampler::sample(const Generator &generator, const double duratio
     auto result = py::list();
 
     // TODO: Run this with omp...?
-    for (float x = 0; x < duration; x += 1 / frequency)
-        result.append(generator(x));
+    for (float t = 0; t < duration; t += 1 / frequency)
+        result.append(generator(t));
 
     return result;
 }

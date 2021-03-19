@@ -2,19 +2,19 @@
 #include "generator.hpp"
 
 /**
- * @brief Generates a sine wave.
+ * @brief Generates a saw wave.
  * 
  */
-struct SineGenerator : Generator
+struct SawGenerator : Generator
 {
     const double frequency;
 
     /**
-     * @brief Construct a new sinus generator. 
+     * @brief Construct a new saw wave generator. 
      * 
      * @param frequency Guess.
      */
-    explicit SineGenerator(const double frequency);
+    explicit SawGenerator(const double frequency);
 
     /**
      * @brief Evaluate the function generator at a certain point.

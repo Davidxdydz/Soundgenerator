@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include "generator.hpp"
 #include "sine_generator.hpp"
+#include "saw_generator.hpp"
 #include "uniform_sampler.hpp"
 
 namespace py = pybind11;
@@ -18,8 +19,14 @@ PYBIND11_MODULE(function_generator, m)
     // Expose sinus generator.
     py::class_<SineGenerator, Generator>(m, "SineGenerator")
         .def(py::init<const double>(), "Construct a sine generator with specific frequency.")
-        .def("__call__", &SineGenerator::operator(), "Sample sinus function for duration.", py::arg("x"))
+        .def("__call__", &SineGenerator::operator(), "Sample sinus function for duration.", py::arg("t"))
         .def_readonly("frequency", &SineGenerator::frequency, "Frequency of sinus generator.");
+
+    // Expose saw wave generator.
+    py::class_<SawGenerator, Generator>(m, "SawGenerator")
+        .def(py::init<const double>(), "Construct a saw generator with specific frequency.")
+        .def("__call__", &SawGenerator::operator(), "Sample saw wave function for duration.", py::arg("t"))
+        .def_readonly("frequency", &SawGenerator::frequency, "Frequency of saw wave generator.");
 
     // Expose uniform sampler.
     py::class_<UniformSampler>(m, "UniformSampler")
