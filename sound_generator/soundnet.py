@@ -6,17 +6,16 @@ from tensorflow.keras.layers import (
     UpSampling1D,
 )
 from tensorflow.keras.models import Model
-from sound_generator.global_configuration import TRAINING_EPOCHS, FEATURE_FIT_ITERATIONS
+from sound_generator.global_configuration import TRAINING_EPOCHS, FEATURE_FIT_ITERATIONS,EMBEDDED_SIZE
 import numpy as np
 
 
-def build_encoder(input_shape, embedded_size):
+def build_encoder(input_shape):
     """
     Builds an encoder model for use in an autoencoder.
 
     Args:
         input_shape: Tuple with network input shape
-        embedded_size: Size of the final encoder embedding layer.
 
     Returns:
         Encoder model with specified dimensions.
@@ -30,7 +29,7 @@ def build_encoder(input_shape, embedded_size):
 
     # TODO make this constant maybe so that input shape is not correlated with embedded_size
     # (n / 16, embedded_size)
-    encoder_out = Dense(embedded_size, activation="relu")(encoder_hidden)
+    encoder_out = Dense(EMBEDDED_SIZE, activation="relu")(encoder_hidden)
 
     return Model(encoder_input, encoder_out, name="Encoder")
 
@@ -74,21 +73,20 @@ def build_freq_classifier(feature_shape):
     return Model(freq_input, freq_classifier, name="FreqClassifier")
 
 
-def build_model(input_shape, embedded_size):
+def build_model(input_shape):
     """
     Builds a frequency autoencoder model with a side output for
     that estimates the frequncy of the input sample.
 
     Args:
         input_shape: Tuple with network input and output shape
-        embedded_size: Size of the final encoder embedding layer.
 
     Returns:
         A Quadruple containing the complete autoencoder, the encoder and
         decoder and the freuqency classifier.
     """
 
-    encoder = build_encoder(input_shape, embedded_size)
+    encoder = build_encoder(input_shape)
     decoder = build_decoder(encoder.output_shape[1:])
     freq_classifier = build_freq_classifier(encoder.output_shape[1:])
 
@@ -144,7 +142,7 @@ def match_features_space_frequency(encoder, frequency_classifier, sample, freque
     temp_inp = Input(feature_space_sample.shape[1:])
 
     # The weights are initally identity so we start at the correct location in feature space.
-    temp_dense = Dense(64, activation="relu", kernel_initializer="identity")(temp_inp)
+    temp_dense = Dense(EMBEDDED_SIZE, activation="relu", kernel_initializer="identity")(temp_inp)
     transform_model = Model(temp_inp, temp_dense)
 
     # Make temporary model to abuse keras gradients.

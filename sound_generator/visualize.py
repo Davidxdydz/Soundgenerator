@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sound_generator.global_configuration import (
     SAMPLE_FREQUENCY,
-    NEAREST_SAMPLE_RATE_THAT_IS_NOT_WEIRD_FUCK_YOU_SIMPLE_AUDIO_WHY_CANT_I_USE_WHATEVER_THE_FUCK_I_WANT,
+    AUDIO_OUT_SAMPLE_RATE,
 )
 from matplotlib.backend_bases import MouseButton
 import simpleaudio
@@ -59,14 +59,14 @@ def plot_waveforms(
                 (original_sounds[i] * 2 ** 14).astype(np.int16),
                 1,
                 2,
-                NEAREST_SAMPLE_RATE_THAT_IS_NOT_WEIRD_FUCK_YOU_SIMPLE_AUDIO_WHY_CANT_I_USE_WHATEVER_THE_FUCK_I_WANT,
+                AUDIO_OUT_SAMPLE_RATE,
             )
         if event.button == MouseButton.RIGHT:
             simpleaudio.play_buffer(
                 (predicted_sounds[i] * 2 ** 14).astype(np.int16),
                 1,
                 2,
-                NEAREST_SAMPLE_RATE_THAT_IS_NOT_WEIRD_FUCK_YOU_SIMPLE_AUDIO_WHY_CANT_I_USE_WHATEVER_THE_FUCK_I_WANT,
+                AUDIO_OUT_SAMPLE_RATE,
             )
 
     fig.canvas.mpl_connect("button_press_event", on_click)

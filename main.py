@@ -1,7 +1,7 @@
 from sound_generator.visualize import plot_waveforms
 import numpy as np
 from sound_generator import soundnet, data_processing, global_configuration
-from function_generator import SineGenerator, UniformSampler,SawGenerator
+from function_generator import SineGenerator, UniformSampler, SawGenerator
 import matplotlib.pyplot as plt
 
 
@@ -33,21 +33,21 @@ if __name__ == "__main__":
     uniform_sampler = UniformSampler(global_configuration.SAMPLE_FREQUENCY)
     samples = [np.array(uniform_sampler.sample(SineGenerator(f))) for f in frequencies]
     samples += [np.array(uniform_sampler.sample(SawGenerator(f))) for f in frequencies]
-    frequencies*=2
+    frequencies *= 2
 
     # a real sound
     # trndsttr = np.loadtxt("samples.csv",delimiter=",")[:global_configuration.SAMPLE_FREQUENCY*2:2,0]
     # samples.append(trndsttr)
     # frequencies.append(400)
 
-    (padding, magnitudes, phases, m_params), (frequency_labels,f_params) = data_processing.batch_preprocess(
-        samples,
-        frequencies
-    )
+    (padding, magnitudes, phases, m_params), (
+        frequency_labels,
+        f_params,
+    ) = data_processing.batch_preprocess(samples, frequencies)
 
     # now build and train the model
     autoencoder, encoder, decoder, frequency_classifier = soundnet.build_model(
-        magnitudes.shape[1:], 64
+        magnitudes.shape[1:]
     )
     soundnet.train_autoencoder(autoencoder, magnitudes, frequency_labels)
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     ):
         # TODO maybe move this postprocessing into a function
         recovered.append(data_processing.postprocess(mag, pha, par, padding))
-        frequency_prediction.append(data_processing._denormalize(fre,f_params))
+        frequency_prediction.append(data_processing._denormalize(fre, f_params))
 
     plot_waveforms(samples, recovered, frequencies, frequency_prediction)
     print(autoencoder.summary())
