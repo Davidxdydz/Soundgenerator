@@ -28,8 +28,8 @@ def plot_waveforms(
         Nothing
     """
     size = len(original_sounds)
-    width = int(np.ceil(np.sqrt(size)))
-    height = int(np.ceil(size // width))
+    width = int(np.sqrt(size))
+    height = int(np.ceil(size / width))
     fig, axes = plt.subplots(height, width, sharex=True, sharey=True, figsize=(15, 15))
     t = np.linspace(*t_range, SAMPLE_FREQUENCY)
     for n, (os, ps, of, pf) in enumerate(
