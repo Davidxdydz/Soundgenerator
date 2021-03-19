@@ -1,5 +1,4 @@
 #include "sine_generator.hpp"
-#define _USE_MATH_DEFINES
 #include <cmath>
 
 SineGenerator::SineGenerator(const double frequency) : frequency(frequency) {}

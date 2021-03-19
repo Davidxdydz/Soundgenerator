@@ -1,5 +1,4 @@
 #include "saw_generator.hpp"
-#define _USE_MATH_DEFINES
 #include <cmath>
 
 SawGenerator::SawGenerator(const double frequency) : frequency(frequency) {}

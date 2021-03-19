@@ -29,6 +29,9 @@ set(cc_sources
     function_generator/src/saw_generator.cc
 )
 
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "..")
 find_package(pybind11 REQUIRED)
-pybind11_add_module(function_generator "${cc_sources}" function_generator/src/bind.cc)
+pybind11_add_module(function_generator SHARED "${cc_sources}" function_generator/src/bind.cc)
 target_include_directories(function_generator PRIVATE function_generator/include)
+target_compile_definitions(function_generator PUBLIC _USE_MATH_DEFINES)
+
