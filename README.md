@@ -67,6 +67,8 @@ $ move .\Debug\function_generator.cp38-win_amd64.pyd ..
 $ cd ..
 $ python main.py
 ```
+The build steps are automated in build_windows.py, if PATH is set up correctly.  
+Execute in `Soundgenerator/` with `python build_windows.py`
 
 ## Troubleshooting
 No problems encountered yet! :)
