@@ -21,7 +21,7 @@ yourself. Here is a short guide on how to build on different platforms.
 
 ### Debian and Ubuntu
 ```shell
-$ sudo apt install python3 python3-dev python3-pip build-essential
+$ sudo apt install python3 python3-dev python3-pip build-essential tqdm
 $ pip3 install numpy matplotlib tensorflow scipy
 $ sudo pip3 install "pybind11[global]"
 $ git clone https://github.com/Davidxdydz/Soundgenerator.git
@@ -37,7 +37,7 @@ $ python3 main.py
 ### Arch
 ```shell
 $ sudo pacman -S python3 python3-pip base-devel
-$ pip3 install numpy matplotlib tensorflow scipy
+$ pip3 install numpy matplotlib tensorflow scipy tqdm
 $ sudo pip3 install "pybind11[global]"
 $ git clone https://github.com/Davidxdydz/Soundgenerator.git
 $ cd Soundgenerator
@@ -51,13 +51,13 @@ $ python3 main.py
 ```
 
 ### Windows
-Good luck!
 Additional prerequesite: msbuild  
 works with msbuild Version 16.1.76+g14b0a930a7, other versions probably work as well.  
-Msbuild is not in path as standard, use it e.g. from "Developer Command Prompt for VS xx"
+Msbuild is not in PATH as standard, use it e.g. from "Developer Command Prompt for VS xx"  
+Add pybind to PATH
 
 ```
-$ pip install pybind11[global] numpy matplotlib tensorflow scipy
+$ pip install pybind11[global] numpy matplotlib tensorflow scipy tqdm
 $ git clone https://github.com/Davidxdydz/Soundgenerator.git
 $ cd Soundgenerator
 $ mkdir build

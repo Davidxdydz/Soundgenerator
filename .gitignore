@@ -7,3 +7,4 @@ build/
 *.pyd
 *.so
 *.csv
+Models/

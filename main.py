@@ -1,3 +1,6 @@
+import logging
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+
 from sound_generator.visualize import plot_waveforms
 import numpy as np
 from sound_generator import soundnet, data_processing, global_configuration
@@ -29,7 +32,8 @@ def pitch_shift(encoder, decoder, frequency_classifier, sample, target_frequency
 if __name__ == "__main__":
 
     # Generate Dataset
-    frequencies = list(range(100, 2000, 100))
+    logging.info("generating data...")
+    frequencies = list(range(100, 2000, 10))
     uniform_sampler = UniformSampler(global_configuration.SAMPLE_FREQUENCY)
     samples = [np.array(uniform_sampler.sample(SineGenerator(f))) for f in frequencies]
     samples += [np.array(uniform_sampler.sample(SawGenerator(f))) for f in frequencies]
@@ -49,7 +53,12 @@ if __name__ == "__main__":
     autoencoder, encoder, decoder, frequency_classifier = soundnet.build_model(
         magnitudes.shape[1:]
     )
+
+    autoencoder.summary(print_fn = logging.info)
+    logging.info(f"training on {len(frequencies)} samples")
     soundnet.train_autoencoder(autoencoder, magnitudes, frequency_labels)
+
+    autoencoder.save("Models/model")
 
     # plot how well the autoencoder does
     # TODO split into training and validation
@@ -64,6 +73,6 @@ if __name__ == "__main__":
         frequency_prediction.append(data_processing._denormalize(fre, f_params))
 
     plot_waveforms(samples, recovered, frequencies, frequency_prediction)
-    print(autoencoder.summary())
+
     # TODO Proper testing.
     pitch_shift(encoder, decoder, frequency_classifier, magnitudes[0], 0.5)

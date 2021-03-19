@@ -2,7 +2,8 @@ import numpy as np
 from numpy.lib.scimath import log2
 from scipy.signal import stft, istft
 from sound_generator.global_configuration import SAMPLE_FREQUENCY, WINDOW_SIZE
-
+from tqdm.auto import tqdm
+import logging
 
 def _normalize(arr):
     """
@@ -167,7 +168,8 @@ def batch_preprocess(samples,frequencies):
     params = []
 
     # transform time domain to stft frequency domain
-    for mag, pha, par in map(pre_process_sample, samples):
+    tqdm()
+    for mag, pha, par in tqdm(map(pre_process_sample, samples),disable = logging.root.level < logging.INFO,total = len(samples),desc="transform"):
         # magnitudes has shape (m,n)
         magnitudes.append(mag)
         phases.append(pha)
@@ -177,7 +179,7 @@ def batch_preprocess(samples,frequencies):
 
     # keep to_short for going back to time domain
     padding = po2 - magnitudes[0].shape[0]
-    for n, mag in enumerate(magnitudes):
+    for n, mag in tqdm(enumerate(magnitudes),total=len(magnitudes),disable = logging.root.level < logging.INFO,desc="normalize"):
         # pad the data with 0 to the next power of two so the network has the right dimensions
         magnitudes[n] = np.pad(mag, [(0, padding), (0, 0)])
     magnitudes = np.array(magnitudes)
