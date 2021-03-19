@@ -29,7 +29,7 @@ def pitch_shift(encoder, decoder, frequency_classifier, sample, target_frequency
 if __name__ == "__main__":
 
     # Generate Dataset
-    frequencies = list(range(10, 100, 20))
+    frequencies = list(range(100, 2000, 100))
     uniform_sampler = UniformSampler(global_configuration.SAMPLE_FREQUENCY)
     samples = [np.array(uniform_sampler.sample(SineGenerator(f))) for f in frequencies]
     samples += [np.array(uniform_sampler.sample(SawGenerator(f))) for f in frequencies]

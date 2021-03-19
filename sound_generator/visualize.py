@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 from sound_generator.global_configuration import (
     SAMPLE_FREQUENCY,
     AUDIO_OUT_SAMPLE_RATE,
@@ -28,18 +29,28 @@ def plot_waveforms(
         Nothing
     """
     size = len(original_sounds)
+
+    # for more than 12 samples, 12 get randomly selected
+    indices = list(range(12))
+    if size > 12:
+        indices = sorted(random.sample(range(size),12))
+        size = 12
+    
+    # build smallest possible grid
     width = int(np.sqrt(size))
     height = int(np.ceil(size / width))
     fig, axes = plt.subplots(height, width, sharex=True, sharey=True, figsize=(15, 15))
+
+    # time is similar for all
     t = np.linspace(*t_range, SAMPLE_FREQUENCY)
-    for n, (os, ps, of, pf) in enumerate(
-        zip(
-            original_sounds,
-            predicted_sounds,
-            original_frequencies,
-            predicted_frequencies,
-        )
-    ):
+
+
+    for n in range(size):
+        os = original_sounds[indices[n]]
+        ps = predicted_sounds[indices[n]]
+        of = original_frequencies[indices[n]]
+        pf = predicted_frequencies[indices[n]]
+
         x = n % width
         y = n // width
         ax = axes[y][x]
@@ -56,14 +67,14 @@ def plot_waveforms(
         i = y * width + x
         if event.button == MouseButton.LEFT:
             simpleaudio.play_buffer(
-                (original_sounds[i] * 2 ** 14).astype(np.int16),
+                (original_sounds[indices[i]] * 2 ** 14).astype(np.int16),
                 1,
                 2,
                 AUDIO_OUT_SAMPLE_RATE,
             )
         if event.button == MouseButton.RIGHT:
             simpleaudio.play_buffer(
-                (predicted_sounds[i] * 2 ** 14).astype(np.int16),
+                (predicted_sounds[indices[i]] * 2 ** 14).astype(np.int16),
                 1,
                 2,
                 AUDIO_OUT_SAMPLE_RATE,
