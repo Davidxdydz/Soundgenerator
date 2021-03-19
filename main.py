@@ -29,12 +29,18 @@ def pitch_shift(encoder, decoder, frequency_classifier, sample, target_frequency
 if __name__ == "__main__":
 
     # Generate Dataset
-    frequencies = np.arange(10, 100, 10, dtype=float)
+    frequencies = list(range(10, 100, 10))
     uniform_sampler = UniformSampler(global_configuration.SAMPLE_FREQUENCY)
-    frequency_labels = data_processing.normalize(frequencies)
     samples = [np.array(uniform_sampler.sample(SineGenerator(f))) for f in frequencies]
-    padding, magnitudes, phases, params = data_processing.samples_to_training_data(
-        samples
+    
+    # a real sound
+    # trndsttr = np.loadtxt("samples.csv",delimiter=",")[:global_configuration.SAMPLE_FREQUENCY*2:2,0]
+    # samples.append(trndsttr)
+    # frequencies.append(400)
+
+    (padding, magnitudes, phases, m_params), (frequency_labels,f_params) = data_processing.batch_preprocess(
+        samples,
+        frequencies
     )
 
     # now build and train the model
@@ -49,13 +55,13 @@ if __name__ == "__main__":
     recovered = []
     frequency_prediction = []
     for n, (mag, fre, pha, par) in enumerate(
-        zip(predictions[0], predictions[1], phases, params)
+        zip(predictions[0], predictions[1], phases, m_params)
     ):
         # TODO maybe move this postprocessing into a function
         recovered.append(data_processing.postprocess(mag, pha, par, padding))
-        frequency_prediction.append(fre * 90 + 10)
+        frequency_prediction.append(data_processing._denormalize(fre,f_params))
 
     plot_waveforms(samples, recovered, frequencies, frequency_prediction)
-
+    print(autoencoder.summary())
     # TODO Proper testing.
     pitch_shift(encoder, decoder, frequency_classifier, magnitudes[0], 0.5)

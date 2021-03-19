@@ -4,7 +4,7 @@ from scipy.signal import stft, istft
 from sound_generator.global_configuration import SAMPLE_FREQUENCY, WINDOW_SIZE
 
 
-def normalize(arr):
+def _normalize(arr):
     """
     Normalizes the elements in arr to [0,1]
 
@@ -13,13 +13,28 @@ def normalize(arr):
 
     Returns:
         arrn: a normalized copy of arr
+        param: (min,max): params used for normalization
     """
-    mi = np.min(arr)
-    ma = np.max(arr)
-    return (arr - mi) / (ma - mi)
+    tmp = np.array(arr,dtype=np.float32)
+    mi = np.min(tmp)
+    ma = np.max(tmp)
+    return (tmp - mi) / (ma - mi),(mi,ma)
 
+def _denormalize(arr,params):
+    """
+    Denormalizes the elements in arr from [0,1] to [min,max]
 
-def complex_to_polar(arr):
+    Args:
+        arr: the array to be denormalized
+        params: (min,max): the denormalization range
+
+    Returns:
+        arr: denormalized copy of arr
+    """
+    mi,ma = params
+    return arr*(ma-mi) + mi
+
+def _complex_to_polar(arr):
     """
     Converts an array of complex numbers to polar coordinats
 
@@ -33,7 +48,7 @@ def complex_to_polar(arr):
     return np.abs(arr), np.arctan2(np.imag(arr), np.real(arr))
 
 
-def polar_to_complex(magnitudes, phases):
+def _polar_to_complex(magnitudes, phases):
     """
     Converts array of magnitudes and phases to an array of complex numbers
 
@@ -47,7 +62,7 @@ def polar_to_complex(magnitudes, phases):
     return magnitudes * np.exp(1j * phases)
 
 
-def preprocess(sampled_sound):
+def pre_process_sample(sampled_sound):
     """
     Converts a sampled time series to a normalized stft representation with WINDOW_SIZE.
 
@@ -65,14 +80,11 @@ def preprocess(sampled_sound):
     # use only the magnitudes for the NN, add the phases back in afterwards
     # TODO find another way, this limits the flexibility
     #       maybe train on phases as well
-    magnitudes, phases = complex_to_polar(zxx)
-    normalized_magnitudes = np.log(magnitudes)
+    magnitudes, phases = _complex_to_polar(zxx)
     # TODO maybe add treshold for very low magnitudes
     # TODO maybe normalize per timestep
-    mi = np.min(normalized_magnitudes)
-    ma = np.max(normalized_magnitudes)
-    normalized_magnitudes = (normalized_magnitudes - mi) / abs(ma - mi) * 2 - 1
-    return normalized_magnitudes, phases, (mi, ma)
+    normalized_magnitudes,params =_normalize(np.log(magnitudes))
+    return normalized_magnitudes*2-1, phases, params
 
 
 def postprocess(magnitudes, phases, normalization_params,padding = 0):
@@ -88,15 +100,14 @@ def postprocess(magnitudes, phases, normalization_params,padding = 0):
     Returns:
         x: 1D array of sample points of the stft in the time domain
     """
-    mi, ma = normalization_params
     unpadded = magnitudes[:-padding] if padding else magnitudes
-    denormalized_magnitudes = np.exp((unpadded + 1) / 2 * abs(ma - mi) + mi)
-    zxx = polar_to_complex(denormalized_magnitudes, phases)
+    denormalized_magnitudes = np.exp(_denormalize((unpadded+1)*0.5,normalization_params))
+    zxx = _polar_to_complex(denormalized_magnitudes, phases)
     _, x = istft(zxx, fs=SAMPLE_FREQUENCY)
     return x
 
 
-def fitting_power_of_two(x):
+def _fitting_power_of_two(x):
     """
     Calculates the smallest power of two, that x is smaller or equal to
 
@@ -111,7 +122,7 @@ def fitting_power_of_two(x):
     return 2 ** (int(log2(x)) + 1)
 
 
-def samples_to_training_data(samples):
+def batch_preprocess(samples,frequencies):
     """
     Converts a list of sampled sounds to normalized and padded training data
 
@@ -119,11 +130,17 @@ def samples_to_training_data(samples):
         samples: Array of time series sampled data. values in [-1,1]
 
     Returns:
-        padding: amount of zero padding added
-        magnitudes: (m,n,k) array of frequency domain magnitude training data.
-                m is number of sounds, n is a power of two and represents duration
-        phases: (m,i,k) array of phases for sound reconstruction. i is the unpadded length
-        params: array of normalization params for every sound
+        tuple 1:
+            (padding, magnitudes, phases, params):
+            padding: amount of zero padding added
+            magnitudes: (m,n,k) array of frequency domain magnitude training data.
+                    m is number of sounds, n is a power of two and represents duration
+            phases: (m,i,k) array of phases for sound reconstruction. i is the unpadded length
+            params: array of normalization params for every sound
+        tuple 2:
+            (fs, params):
+            fs: the normalized frequency labels
+            params: the normalization parameters
     """
 
     magnitudes = []
@@ -132,13 +149,13 @@ def samples_to_training_data(samples):
     params = []
 
     # transform time domain to stft frequency domain
-    for mag, pha, par in map(preprocess, samples):
+    for mag, pha, par in map(pre_process_sample, samples):
         # magnitudes has shape (m,n)
         magnitudes.append(mag)
         phases.append(pha)
         params.append(par)
 
-    po2 = fitting_power_of_two(magnitudes[0].shape[0])
+    po2 = _fitting_power_of_two(magnitudes[0].shape[0])
 
     # keep to_short for going back to time domain
     padding = po2 - magnitudes[0].shape[0]
@@ -147,4 +164,4 @@ def samples_to_training_data(samples):
         magnitudes[n] = np.pad(mag, [(0, padding), (0, 0)])
     magnitudes = np.array(magnitudes)
 
-    return padding, magnitudes, phases, params
+    return (padding, magnitudes, phases, params), _normalize(frequencies)
