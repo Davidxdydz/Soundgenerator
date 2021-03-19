@@ -104,7 +104,8 @@ def postprocess(magnitudes, phases, normalization_params,padding = 0):
     denormalized_magnitudes = np.exp(_denormalize((unpadded+1)*0.5,normalization_params))
     zxx = _polar_to_complex(denormalized_magnitudes, phases)
     _, x = istft(zxx, fs=SAMPLE_FREQUENCY)
-    return x
+    norm,_ = _normalize(x)
+    return norm*2-1
 
 
 def _fitting_power_of_two(x):
