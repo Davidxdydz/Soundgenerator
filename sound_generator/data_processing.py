@@ -62,6 +62,23 @@ def _polar_to_complex(magnitudes, phases):
     return magnitudes * np.exp(1j * phases)
 
 
+def _thresholded_log(arr,threshold):
+    """
+    Computes the natural log of values in arr whilst avoiding large negative values/ divide by zero exceptions
+
+    Args:
+        arr: values to take the log of
+        threshold: -threshold is the smallest acceptable result
+    
+    Returns:
+        logs: natural logs of values in arr, smallest being  at -threshold
+    """
+    t = np.exp(threshold)
+    tmp = arr.copy()
+    tmp[tmp<t] = t
+    return np.log(tmp)
+
+
 def pre_process_sample(sampled_sound):
     """
     Converts a sampled time series to a normalized stft representation with WINDOW_SIZE.
@@ -83,7 +100,7 @@ def pre_process_sample(sampled_sound):
     magnitudes, phases = _complex_to_polar(zxx)
     # TODO maybe add treshold for very low magnitudes
     # TODO maybe normalize per timestep
-    normalized_magnitudes,params =_normalize(np.log(magnitudes))
+    normalized_magnitudes,params =_normalize(_thresholded_log(magnitudes,-20))
     return normalized_magnitudes*2-1, phases, params
 
 
