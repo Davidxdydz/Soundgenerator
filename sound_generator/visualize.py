@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from sound_generator.global_configuration import (
-    SAMPLE_FREQUENCY,
+    MAX_SOUNDS_PER_PAGE, SAMPLE_FREQUENCY,
     AUDIO_OUT_SAMPLE_RATE,
 )
 from matplotlib.backend_bases import MouseButton
@@ -30,11 +30,11 @@ def plot_waveforms(
     """
     size = len(original_sounds)
 
-    # for more than 12 samples, 12 get randomly selected
-    indices = list(range(12))
-    if size > 12:
-        indices = sorted(random.sample(range(size),12))
-        size = 12
+    # for more than MAX_SOUNDS_PER_PAGE samples, MAX_SOUNDS_PER_PAGE samples get randomly selected
+    indices = list(range(MAX_SOUNDS_PER_PAGE))
+    if size > MAX_SOUNDS_PER_PAGE:
+        indices = sorted(random.sample(range(size),MAX_SOUNDS_PER_PAGE))
+        size = MAX_SOUNDS_PER_PAGE
     
     # build smallest possible grid
     width = int(np.sqrt(size))
@@ -58,6 +58,8 @@ def plot_waveforms(
         ax.index = (x, y)
         ax.plot(t, os, color="orange")
         ax.plot(t, ps, color="blue")
+        ax.set_ylabel("Amplitude")
+        ax.set_xlabel("Time [s]")
         ax.set_title(f"{int(of)}Hz, predicted: {int(pf)}Hz")
 
     def on_click(event):
