@@ -4,8 +4,13 @@ from scipy.signal import stft, istft
 from sound_generator.global_configuration import SAMPLE_FREQUENCY, WINDOW_SIZE
 from tqdm.auto import tqdm
 import logging
+import os
+import pickle
+import json
+from scipy.io import wavfile
 
-def _normalize(arr, mi = None,ma = None):
+
+def _normalize(arr, mi=None, ma=None):
     """
     Normalizes the elements in arr to [0,1]
 
@@ -16,14 +21,15 @@ def _normalize(arr, mi = None,ma = None):
         arrn: a normalized copy of arr
         param: (min,max): params used for normalization
     """
-    tmp = np.array(arr,dtype=np.float32)
+    tmp = np.array(arr, dtype=np.float32)
     if not mi:
         mi = np.min(tmp)
     if not ma:
         ma = np.max(tmp)
-    return (tmp - mi) / (ma - mi),(mi,ma)
+    return (tmp - mi) / (ma - mi), (mi, ma)
 
-def _denormalize(arr,params):
+
+def _denormalize(arr, params):
     """
     Denormalizes the elements in arr from [0,1] to [min,max]
 
@@ -34,8 +40,9 @@ def _denormalize(arr,params):
     Returns:
         arr: denormalized copy of arr
     """
-    mi,ma = params
-    return arr*(ma-mi) + mi
+    mi, ma = params
+    return arr * (ma - mi) + mi
+
 
 def _complex_to_polar(arr):
     """
@@ -65,20 +72,20 @@ def _polar_to_complex(magnitudes, phases):
     return magnitudes * np.exp(1j * phases)
 
 
-def _thresholded_log(arr,threshold):
+def _thresholded_log(arr, threshold):
     """
     Computes the natural log of values in arr whilst avoiding large negative values/ divide by zero exceptions
 
     Args:
         arr: values to take the log of
         threshold: -threshold is the smallest acceptable result
-    
+
     Returns:
         logs: natural logs of values in arr, smallest being  at -threshold
     """
     t = np.exp(threshold)
     tmp = arr.copy()
-    tmp[tmp<t] = t
+    tmp[tmp < t] = t
     return np.log(tmp)
 
 
@@ -98,12 +105,12 @@ def pre_process_sample(sampled_sound):
     zxx = np.fft.rfft(sampled_sound)
     magnitudes, phases = _complex_to_polar(zxx)
     # TODO globally normalize magnitudes
-    normalized_magnitudes,m_params =_normalize(_thresholded_log(magnitudes,-20))
-    normalized_phases, p_params= _normalize(phases,mi = -np.pi,ma = np.pi) 
+    normalized_magnitudes, m_params = _normalize(_thresholded_log(magnitudes, -20))
+    normalized_phases, p_params = _normalize(phases, mi=-np.pi, ma=np.pi)
     return sampled_sound, normalized_magnitudes, normalized_phases, m_params, p_params
 
 
-def postprocess(magnitudes, phases, normalization_params,padding = 0):
+def postprocess(magnitudes, phases, normalization_params, padding=0):
     """
     Converts a normalized stft representation into a denormalized time series representation.
     The stft has to represent a signal sampled at SAMPLE_FREQUENCY
@@ -117,11 +124,13 @@ def postprocess(magnitudes, phases, normalization_params,padding = 0):
         x: 1D array of sample points of the stft in the time domain
     """
     unpadded = magnitudes[:-padding] if padding else magnitudes
-    denormalized_magnitudes = np.exp(_denormalize((unpadded+1)*0.5,normalization_params))
+    denormalized_magnitudes = np.exp(
+        _denormalize((unpadded + 1) * 0.5, normalization_params)
+    )
     zxx = _polar_to_complex(denormalized_magnitudes, phases)
     _, x = istft(zxx, fs=SAMPLE_FREQUENCY)
-    norm,_ = _normalize(x)
-    return norm*2-1
+    norm, _ = _normalize(x)
+    return norm * 2 - 1
 
 
 def _fitting_power_of_two(x):
@@ -139,7 +148,46 @@ def _fitting_power_of_two(x):
     return 2 ** (int(log2(x)) + 1)
 
 
-def batch_preprocess(samples,frequencies):
+def load_NSynth_test(buffer=True):
+    """
+    TODO
+    """
+    samples = []
+    frequencies = []
+    if buffer and os.path.exists("Sounds/nsynth-test/data.pickle"):
+        with open("Sounds/nsynth-test/data.pickle", "rb") as file:
+            logging.info("loading processed...")
+            data = pickle.load(file)
+            logging.info("Done")
+            return data
+
+    with open("Sounds/nsynth-test/examples.json") as file:
+        samples_json = json.load(file)
+    for key, value in tqdm(
+        samples_json.items(),
+        total=4096,
+        disable=logging.root.level < logging.INFO,
+        desc="loading wavs",
+    ):
+        _, data = wavfile.read(os.path.join("Sounds/nsynth-test/audio", key + ".wav"))
+        samples.append(data)
+        frequencies.append(value["pitch"])
+
+    processed = batch_preprocess(samples, frequencies)
+    data = (
+        samples,
+        frequencies,
+        processed,
+    )
+    if buffer:
+        with open("Sounds/nsynth-test/data.pickle", "wb") as file:
+            logging.info("Saving processed...")
+            pickle.dump(data, file)
+            logging.info("Done")
+    return data
+
+
+def batch_preprocess(samples, frequencies):
     """
     Converts a list of sampled sounds to normalized training data
 
@@ -165,8 +213,12 @@ def batch_preprocess(samples,frequencies):
     p_params = []
 
     # transform time domain to stft frequency domain
-    tqdm()
-    for sam, mag, pha, m_p, p_p in tqdm(map(pre_process_sample, samples),disable = logging.root.level < logging.INFO,total = len(samples),desc="transform"):
+    for sam, mag, pha, m_p, p_p in tqdm(
+        map(pre_process_sample, samples),
+        disable=logging.root.level < logging.INFO,
+        total=len(samples),
+        desc="preprocessing",
+    ):
         # magnitudes has shape (m,n)
         samples_data.append(sam)
         magnitudes.append(mag)
@@ -176,4 +228,10 @@ def batch_preprocess(samples,frequencies):
 
     magnitudes = np.array(magnitudes)
 
-    return (np.array(samples_data),np.array(magnitudes), np.array(phases), np.array(m_params), np.array(p_params)), _normalize(frequencies)
+    return (
+        np.array(samples_data),
+        np.array(magnitudes),
+        np.array(phases),
+        np.array(m_params),
+        np.array(p_params),
+    ), _normalize(frequencies)
