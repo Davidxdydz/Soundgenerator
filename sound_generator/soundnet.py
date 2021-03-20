@@ -41,11 +41,11 @@ embedded:               | d                     2
                 mse against samples                 mse against freq
 
 """
-a = 128
-b = 64
-m = 64
-c = 64
-d = 32
+a = 1024
+b = 1024
+m = 256
+c = 128
+d = 64
 
 
 
@@ -54,8 +54,8 @@ def build_sample_encoder(input_shape):
     TODO
     """
     encoder_input = Input(input_shape)
-    encoder_hidden = Dense(a, activation = "relu")(encoder_input)
-    encoder_hidden = Dense(m,activation = "relu")(encoder_hidden)
+    encoder_hidden = Dense(a, activation = "tanh")(encoder_input)
+    encoder_hidden = Dense(m,activation = "tanh")(encoder_hidden)
     return Model(encoder_input,encoder_hidden,name = "SampleEncoder")
 
 def build_magnitude_encoder(input_shape):
@@ -63,8 +63,8 @@ def build_magnitude_encoder(input_shape):
     TODO
     """
     encoder_input = Input(input_shape)
-    encoder_hidden = Dense(b, activation = "relu")(encoder_input)
-    encoder_hidden = Dense(m,activation = "relu")(encoder_hidden)
+    encoder_hidden = Dense(b, activation = "tanh")(encoder_input)
+    encoder_hidden = Dense(m,activation = "tanh")(encoder_hidden)
     return Model(encoder_input,encoder_hidden,name = "MagnitudeEncoder")
 
 def build_phase_encoder(input_shape):
@@ -72,8 +72,8 @@ def build_phase_encoder(input_shape):
     TODO
     """
     encoder_input = Input(input_shape)
-    encoder_hidden = Dense(b, activation = "relu")(encoder_input)
-    encoder_hidden = Dense(m,activation = "relu")(encoder_hidden)
+    encoder_hidden = Dense(b, activation = "tanh")(encoder_input)
+    encoder_hidden = Dense(m,activation = "tanh")(encoder_hidden)
     return Model(encoder_input,encoder_hidden,name = "PhaseEncoder")
 
 def build_inner_encoder():
@@ -86,8 +86,8 @@ def build_inner_encoder():
     phase_encoder_output = Input((m,))
     added = Add()([sample_encoder_output,magnitude_encoder_output,phase_encoder_output])
 
-    encoder_hidden = Dense(c, activation="relu")(added)
-    encoder_out = Dense(d, activation="relu")(encoder_hidden)
+    encoder_hidden = Dense(c, activation="tanh")(added)
+    encoder_out = Dense(d, activation="tanh")(encoder_hidden)
 
     return Model(inputs = [sample_encoder_output,magnitude_encoder_output,phase_encoder_output], outputs = encoder_out, name="InnerEncoder")
 
@@ -98,8 +98,8 @@ def build_inner_decoder():
     """
 
     decoder_input = Input((d,))
-    decoder_hidden = Dense(c,activation="relu")(decoder_input)
-    decoder_out = Dense(m,activation="relu")(decoder_hidden)
+    decoder_hidden = Dense(c,activation="tanh")(decoder_input)
+    decoder_out = Dense(m,activation="tanh")(decoder_hidden)
 
     return Model(decoder_input, decoder_out, name="InnerDecoder")
 
@@ -109,8 +109,8 @@ def build_sample_decoder(sample_shape):
     """
 
     decoder_input = Input((m,))
-    decoder_hidden = Dense(a,activation="relu")(decoder_input)
-    decoder_output = Dense(*sample_shape,activation="relu")(decoder_hidden)
+    decoder_hidden = Dense(a,activation="tanh")(decoder_input)
+    decoder_output = Dense(*sample_shape,activation="tanh")(decoder_hidden)
     return Model(decoder_input,decoder_output,name = "SampleDecoder")
 
 def build_magnitude_decoder(magnitude_shape):
@@ -119,8 +119,8 @@ def build_magnitude_decoder(magnitude_shape):
     """
 
     decoder_input = Input((m,))
-    decoder_hidden = Dense(b,activation="relu")(decoder_input)
-    decoder_output = Dense(*magnitude_shape,activation="relu")(decoder_hidden)
+    decoder_hidden = Dense(b,activation="tanh")(decoder_input)
+    decoder_output = Dense(*magnitude_shape,activation="tanh")(decoder_hidden)
     return Model(decoder_input,decoder_output,name = "MagnitudeDecoder")
 
 def build_phase_decoder(phase_shape):
@@ -129,8 +129,8 @@ def build_phase_decoder(phase_shape):
     """
 
     decoder_input = Input((m,))
-    decoder_hidden = Dense(b,activation="relu")(decoder_input)
-    decoder_output = Dense(*phase_shape,activation="relu")(decoder_hidden)
+    decoder_hidden = Dense(b,activation="tanh")(decoder_input)
+    decoder_output = Dense(*phase_shape,activation="tanh")(decoder_hidden)
     return Model(decoder_input,decoder_output,name = "PhaseDecoder")
 
 def polar_to_complex(inp):
@@ -199,9 +199,9 @@ def build_freq_classifier():
     """
 
     freq_input = Input((d,))
-    freq_flatten = Flatten()(freq_input)
-    freq_classifier = Dense(16, activation="relu")(freq_flatten)
-    freq_classifier = Dense(1, activation="relu")(freq_classifier)
+    freq_classifier = Dense(64, activation="tanh")(freq_input)
+    freq_classifier = Dense(16, activation="tanh")(freq_classifier)
+    freq_classifier = Dense(1, activation="tanh")(freq_classifier)
     return Model(freq_input, freq_classifier, name="FreqClassifier")
 
 def build_autoencoder(sample_shape,magnitude_shape,phase_shape):
@@ -252,7 +252,7 @@ def match_features_space_frequency(encoder, frequency_classifier, sample, freque
     temp_inp = Input(feature_space_sample.shape[1:])
 
     # The weights are initally identity so we start at the correct location in feature space.
-    temp_dense = Dense(EMBEDDED_SIZE, activation="relu", kernel_initializer="identity")(temp_inp)
+    temp_dense = Dense(EMBEDDED_SIZE, activation="tanh", kernel_initializer="identity")(temp_inp)
     transform_model = Model(temp_inp, temp_dense)
 
     # Make temporary model to abuse keras gradients.
