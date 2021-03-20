@@ -5,7 +5,7 @@ from sound_generator.global_configuration import SAMPLE_FREQUENCY, WINDOW_SIZE
 from tqdm.auto import tqdm
 import logging
 
-def _normalize(arr):
+def _normalize(arr, mi = None,ma = None):
     """
     Normalizes the elements in arr to [0,1]
 
@@ -17,8 +17,10 @@ def _normalize(arr):
         param: (min,max): params used for normalization
     """
     tmp = np.array(arr,dtype=np.float32)
-    mi = np.min(tmp)
-    ma = np.max(tmp)
+    if not mi:
+        mi = np.min(tmp)
+    if not ma:
+        ma = np.max(tmp)
     return (tmp - mi) / (ma - mi),(mi,ma)
 
 def _denormalize(arr,params):
@@ -82,27 +84,23 @@ def _thresholded_log(arr,threshold):
 
 def pre_process_sample(sampled_sound):
     """
-    Converts a sampled time series to a normalized stft representation with WINDOW_SIZE.
+    Adds normalized fft representation to sampled time series.
 
     Args:
         sampled_sound: array of sound sampled at SAMPLE_FREQUENCY normalized to [-1,1]
 
     Returns:
-        normalized_magnitudes: (m,n) array of real valued magnitudes at different times (m) and frequencies (n),
-                                normalized logarithmically to [-1,1]
-        phases: (m,n) array of phases for reconstruction of the initial complex valued stft
-        params = (min,max): parameters used for normalization, needed for denormalization
+        normalized_magnitudes: fft magnitudes logarithmically normalized to [0,1]
+        phases: fft phases normalized to [0,1]
+        m_params = (min,max): parameters used for magnitude normalization
+        p_params = (min,max): parameters used for phase normalization
     """
-    # 50% overlapping window
-    _, _, zxx = stft(sampled_sound, fs=SAMPLE_FREQUENCY, nperseg=WINDOW_SIZE)
-    # use only the magnitudes for the NN, add the phases back in afterwards
-    # TODO find another way, this limits the flexibility
-    #       maybe train on phases as well
+    zxx = np.fft.rfft(sampled_sound)
     magnitudes, phases = _complex_to_polar(zxx)
-    # TODO maybe add treshold for very low magnitudes
-    # TODO maybe normalize per timestep
-    normalized_magnitudes,params =_normalize(_thresholded_log(magnitudes,-20))
-    return normalized_magnitudes*2-1, phases, params
+    # TODO globally normalize magnitudes
+    normalized_magnitudes,m_params =_normalize(_thresholded_log(magnitudes,-20))
+    normalized_phases, p_params= _normalize(phases,mi = -np.pi,ma = np.pi) 
+    return sampled_sound, normalized_magnitudes, normalized_phases, m_params, p_params
 
 
 def postprocess(magnitudes, phases, normalization_params,padding = 0):
@@ -143,45 +141,39 @@ def _fitting_power_of_two(x):
 
 def batch_preprocess(samples,frequencies):
     """
-    Converts a list of sampled sounds to normalized and padded training data
+    Converts a list of sampled sounds to normalized training data
 
     Args:
         samples: Array of time series sampled data. values in [-1,1]
 
     Returns:
         tuple 1:
-            (padding, magnitudes, phases, params):
-            padding: amount of zero padding added
-            magnitudes: (m,n,k) array of frequency domain magnitude training data.
-                    m is number of sounds, n is a power of two and represents duration
-            phases: (m,i,k) array of phases for sound reconstruction. i is the unpadded length
-            params: array of normalization params for every sound
+            (samples, magnitudes, phases, m_params, p_params):
+            samples: samples
+            magnitudes: normalized fft magnitudes
+            phases: normalized fft phases
+            m_params: normalization params of magnitudes
         tuple 2:
             (fs, params):
             fs: the normalized frequency labels
             params: the normalization parameters
     """
-
+    samples_data = []
     magnitudes = []
-    # for reconstruction
     phases = []
-    params = []
+    m_params = []
+    p_params = []
 
     # transform time domain to stft frequency domain
     tqdm()
-    for mag, pha, par in tqdm(map(pre_process_sample, samples),disable = logging.root.level < logging.INFO,total = len(samples),desc="transform"):
+    for sam, mag, pha, m_p, p_p in tqdm(map(pre_process_sample, samples),disable = logging.root.level < logging.INFO,total = len(samples),desc="transform"):
         # magnitudes has shape (m,n)
+        samples_data.append(sam)
         magnitudes.append(mag)
         phases.append(pha)
-        params.append(par)
+        m_params.append(m_p)
+        p_params.append(p_p)
 
-    po2 = _fitting_power_of_two(magnitudes[0].shape[0])
-
-    # keep to_short for going back to time domain
-    padding = po2 - magnitudes[0].shape[0]
-    for n, mag in tqdm(enumerate(magnitudes),total=len(magnitudes),disable = logging.root.level < logging.INFO,desc="normalize"):
-        # pad the data with 0 to the next power of two so the network has the right dimensions
-        magnitudes[n] = np.pad(mag, [(0, padding), (0, 0)])
     magnitudes = np.array(magnitudes)
 
-    return (padding, magnitudes, phases, params), _normalize(frequencies)
+    return (np.array(samples_data),np.array(magnitudes), np.array(phases), np.array(m_params), np.array(p_params)), _normalize(frequencies)

@@ -7,4 +7,5 @@ build/
 *.pyd
 *.so
 *.csv
+build_windows.py
 Models/
